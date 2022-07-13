@@ -22,7 +22,7 @@ const getActiveWindow = async () => {
 	} else if (lastWindow.fullTitle !== fullTitle) {
 		const line = lastWindow.fullTitle + '\t' + lastWindow.startTime.format('HH:mm:SS') + '\t' + lastWindow.endTime.format('HH:mm:SS') + '\n';
 
-		console.log('Switched window. Writing to file: ' + line);
+		console.log(`${isNewDay ? 'Good morning!' :'Switched window'}. Writing to file: ${line}`);
 		lastWindow && fs.promises.appendFile('./test.txt', line);
 
 		activeWindows.push({
@@ -39,27 +39,15 @@ const getActiveWindow = async () => {
 	if (isNewDay) {
 		const dateStr = lastWindow.endTime.format('YYYY.MM.DD');
 		fs.rename('./test.txt', `./test-${dateStr}.txt`, (err) => {
-			console.log(!!err);
-			console.log('erere', err);
+			console.log('Error renaming text.txt', err);
 		});
 		activeWindows = [activeWindows[activeWindows.lenth-1]];
 	}
 }
 function getCurrentTime() {
-	//console.log(tempCounter)
-	if (tempCounter >= 5) {
-		//console.log('marti',moment().add(tempCounter, 'days'))
-		return moment().add(tempCounter/5, 'days');
-	}
-
 	return moment();
-	// const date = new Date();
-	// const hour = ("0" + date.getHours()).slice(-2);
-	// const minute = ("0" + date.getMinutes()).slice(-2);
-	// const second = ("0" + date.getSeconds()).slice(-2);
-	// return hour + ":" + minute + ":" + second;
 }
 
 setInterval(() => {
 	getActiveWindow()
-}, 2000);
+}, 10000);
