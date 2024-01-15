@@ -8,10 +8,15 @@ let activeWindows = [];
 let tempCounter = 0;
 const getActiveWindow = async () => {
 	const window = await activeWindow({});
-	const fullTitle = window?.owner?.path + '\t' + window.title;
+
+	// normalize
+	const path = window?.owner?.path?.replace(/\t/g, '_').replace(/\r\n/g, '_').replace(/\n/g, '_');
+	const title = window?.title?.replace(/\t/g, '_').replace(/\r\n/g, '_').replace(/\n/g, '_');
+
+	const fullTitle = path + '\t' + title;
 
 	const lastWindow = activeWindows[activeWindows.length - 1];
-	const isNewDay = lastWindow && getCurrentTime().diff(lastWindow.endTime, 'days') > 0;
+	const isNewDay = lastWindow && !getCurrentTime().isSame(lastWindow.endTime, 'day');
 
 	if (!lastWindow) {
 		activeWindows.push({
@@ -20,10 +25,13 @@ const getActiveWindow = async () => {
 			endTime: getCurrentTime()
 		});
 	} else if (lastWindow.fullTitle !== fullTitle) {
-		const line = lastWindow.fullTitle + '\t' + lastWindow.startTime.format('HH:mm:SS') + '\t' + lastWindow.endTime.format('HH:mm:SS') + '\n';
+		const line = lastWindow.fullTitle + '\t' + lastWindow.startTime.format('HH:mm:ss') + '\t' + lastWindow.endTime.format('HH:mm:ss') + /*'\t' + JSON.stringify(window) +*/ '\n';
+		const lineToPrint = path + '__\\t__' + title + '__\\t__' + lastWindow.startTime.format('HH:mm:ss') + '__\\t__' + lastWindow.endTime.format('HH:mm:ss') + /*'\t' + JSON.stringify(window) +*/ '\n';
 
-		console.log(`${isNewDay ? 'Good morning!' :'Switched window'}. Writing to file: ${line}`);
-		lastWindow && fs.promises.appendFile('./test.txt', line);
+		if (!isNewDay && lastWindow) {
+			console.log(`Switched window. Writing to file: ${lineToPrint}`);
+			fs.promises.appendFile('./test.txt', line);
+		}
 
 		activeWindows.push({
 			fullTitle: fullTitle,
@@ -38,9 +46,27 @@ const getActiveWindow = async () => {
 
 	if (isNewDay) {
 		const dateStr = lastWindow.endTime.format('YYYY.MM.DD');
-		fs.rename('./test.txt', `./test-${dateStr}.txt`, (err) => {
-			console.log('Error renaming text.txt', err);
+		const newName = `./test-${dateStr}.txt`;
+		console.log(`Good morning! Renaming ./test.txt to ${newName}`);
+
+		fs.stat(newName, function(err, stat) {
+			if (err == null) {
+				// file exists
+				const newNameRandom = newName + +(Math.random() * 1000);
+				console.log(`File exists! Renaming to ${newNameRandom}`);
+				fs.rename('./test.txt', newNameRandom, (err) => {
+					err && console.log('Error renaming text.txt', err);
+				});
+			} else if (err.code === 'ENOENT') {
+				// file does not exist
+				fs.rename('./test.txt', newName, (err) => {
+					err && console.log('Error renaming text.txt', err);
+				});
+			} else {
+				console.error('Error when checking if file exists: ', err);
+			}
 		});
+
 		activeWindows = [activeWindows[activeWindows.lenth-1]];
 	}
 }
