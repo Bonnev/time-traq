@@ -129,6 +129,6 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-.history
-availabilities*.txt
+availabilities-*.txt
 test*.txt
+.history
