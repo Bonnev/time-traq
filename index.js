@@ -3,9 +3,8 @@ const moment = require('moment');
 
 const fs = require('fs');
 
-let activeWindows = [];
+let lastWindow = null;
 
-let tempCounter = 0;
 const getActiveWindow = async () => {
 	const window = await activeWindow({});
 
@@ -15,34 +14,32 @@ const getActiveWindow = async () => {
 
 	const fullTitle = path + '\t' + title;
 
-	const lastWindow = activeWindows[activeWindows.length - 1];
 	const isNewDay = lastWindow && !getCurrentTime().isSame(lastWindow.endTime, 'day');
 
 	if (!lastWindow) {
-		activeWindows.push({
+		lastWindow = {
 			fullTitle: fullTitle,
 			startTime: getCurrentTime(),
 			endTime: getCurrentTime()
-		});
+		};
 	} else if (lastWindow.fullTitle !== fullTitle) {
 		const line = lastWindow.fullTitle + '\t' + lastWindow.startTime.format('HH:mm:ss') + '\t' + lastWindow.endTime.format('HH:mm:ss') + /*'\t' + JSON.stringify(window) +*/ '\n';
 		const lineToPrint = path + '__\\t__' + title + '__\\t__' + lastWindow.startTime.format('HH:mm:ss') + '__\\t__' + lastWindow.endTime.format('HH:mm:ss') + /*'\t' + JSON.stringify(window) +*/ '\n';
 
-		if (!isNewDay && lastWindow) {
+		if (!isNewDay) {
 			console.log(`Switched window. Writing to file: ${lineToPrint}`);
 			fs.promises.appendFile('./test.txt', line);
 		}
 
-		activeWindows.push({
+		lastWindow = {
 			fullTitle: fullTitle,
 			startTime: getCurrentTime(),
 			endTime: getCurrentTime()
-		});
+		};
 	} else if (!isNewDay) {
 		console.log('Still on: ' + fullTitle);
 		lastWindow.endTime = getCurrentTime();
 	}
-	tempCounter++;
 
 	if (isNewDay) {
 		const dateStr = lastWindow.endTime.format('YYYY.MM.DD');
@@ -66,10 +63,9 @@ const getActiveWindow = async () => {
 				console.error('Error when checking if file exists: ', err);
 			}
 		});
-
-		activeWindows = [activeWindows[activeWindows.lenth-1]];
 	}
 }
+
 function getCurrentTime() {
 	return moment();
 }
