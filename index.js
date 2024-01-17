@@ -14,8 +14,6 @@ const getActiveWindow = async () => {
 
 	const fullTitle = path + '\t' + title;
 
-	const isNewDay = lastWindow && !getCurrentTime().isSame(lastWindow.endTime, 'day');
-
 	if (!lastWindow) {
 		lastWindow = {
 			fullTitle: fullTitle,
@@ -26,43 +24,18 @@ const getActiveWindow = async () => {
 		const line = lastWindow.fullTitle + '\t' + lastWindow.startTime.format('HH:mm:ss') + '\t' + lastWindow.endTime.format('HH:mm:ss') + /*'\t' + JSON.stringify(window) +*/ '\n';
 		const lineToPrint = path + '__\\t__' + title + '__\\t__' + lastWindow.startTime.format('HH:mm:ss') + '__\\t__' + lastWindow.endTime.format('HH:mm:ss') + /*'\t' + JSON.stringify(window) +*/ '\n';
 
-		if (!isNewDay) {
-			console.log(`Switched window. Writing to file: ${lineToPrint}`);
-			fs.promises.appendFile('./test.txt', line);
-		}
+		console.log(`Switched window. Writing to file: ${lineToPrint}`);
+		const dateStr = getCurrentTime().format('YYYY.MM.DD');
+		fs.promises.appendFile(`./test-${dateStr}.txt`, line);
 
 		lastWindow = {
 			fullTitle: fullTitle,
 			startTime: getCurrentTime(),
 			endTime: getCurrentTime()
 		};
-	} else if (!isNewDay) {
+	} else {
 		console.log('Still on: ' + fullTitle);
 		lastWindow.endTime = getCurrentTime();
-	}
-
-	if (isNewDay) {
-		const dateStr = lastWindow.endTime.format('YYYY.MM.DD');
-		const newName = `./test-${dateStr}.txt`;
-		console.log(`Good morning! Renaming ./test.txt to ${newName}`);
-
-		fs.stat(newName, function(err, stat) {
-			if (err == null) {
-				// file exists
-				const newNameRandom = newName + +(Math.random() * 1000);
-				console.log(`File exists! Renaming to ${newNameRandom}`);
-				fs.rename('./test.txt', newNameRandom, (err) => {
-					err && console.log('Error renaming text.txt', err);
-				});
-			} else if (err.code === 'ENOENT') {
-				// file does not exist
-				fs.rename('./test.txt', newName, (err) => {
-					err && console.log('Error renaming text.txt', err);
-				});
-			} else {
-				console.error('Error when checking if file exists: ', err);
-			}
-		});
 	}
 }
 
